@@ -1,0 +1,17 @@
+<resources>
+
+    <string name="app_name">Winnie Hunt</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">Winnie Hunt</string>
+    <string name="start_text">Run away!</string>
+    <string name="instructions_text">
+        Winnie is trying to run away but Carey won\'t let her go! Help Winnie escape
+        from all the Careys chasing her!!
+    </string>
+    <string name="menu_hi">Hi hi hi!</string>
+    <string name="alert_hi">I love you!!!</string>
+    <string name="message_ready">Tap to Start</string>
+    <string name="message_done1">Caught Winnie</string>
+    <string name="message_done2">FOREVERRR!!</string>
+
+</resources>
