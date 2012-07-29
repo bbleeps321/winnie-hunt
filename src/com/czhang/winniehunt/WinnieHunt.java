@@ -3,6 +3,7 @@ package com.czhang.winniehunt;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,11 +16,18 @@ public class WinnieHunt extends Activity {
   /** Handle to view in which game is running. **/
   private ControllerView gameView;
 
+  /** MediaPlayer used to play the background music. **/
+  private MediaPlayer mediaPlayer;
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.controller_view);
     setContentView(R.layout.activity_main);
+
+    // Initialize media player.
+    mediaPlayer = MediaPlayer.create(this, R.raw.music_background);
+    mediaPlayer.setLooping(true);
   }
 
   @Override
@@ -27,6 +35,12 @@ public class WinnieHunt extends Activity {
     super.onCreateOptionsMenu(menu);
     menu.add(0, 0, 0, R.string.menu_hi);
     return true;
+  }
+
+  @Override
+  public void onDestroy() {
+    mediaPlayer.release();
+    super.onDestroy();
   }
 
   @Override
@@ -61,8 +75,11 @@ public class WinnieHunt extends Activity {
     // Get handle to the game view.
     gameView = (ControllerView) findViewById(R.id.controllerView);
 
-    // Start the thread
+    // Start the thread.
     gameView.getThread().doStart();
+
+    // Start playing the music.
+    mediaPlayer.start();
   }
 
   /**

@@ -12,9 +12,6 @@ import android.graphics.Rect;
  */
 public class Winnie extends OverlapableShape {
   public static final int SIZE_DP = 50;
-//  private static final int COLOR = Color.GREEN;
-//  private static final Bitmap IMAGE = BitmapFactory.
-
 
   /**
    * x,y specify top left.
@@ -29,10 +26,4 @@ public class Winnie extends OverlapableShape {
   public void moveTo(int x, int y) {
     geometry = new Rect(x - SIZE_DP / 2, y - SIZE_DP / 2, x + SIZE_DP / 2, y + SIZE_DP / 2);
   }
-
-//  @Override
-//  public synchronized void draw(Canvas canvas) {
-//    canvas.drawBitmap(bitmap, getLeft(), getTop(), paint);
-//    canvas.drawArc(new RectF(geometry), 0, 360, true, paint);
-//  }
 }

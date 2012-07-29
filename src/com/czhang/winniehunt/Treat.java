@@ -4,7 +4,6 @@
 package com.czhang.winniehunt;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Rect;
 
 /**
@@ -13,7 +12,6 @@ import android.graphics.Rect;
  */
 public class Treat extends OverlapableShape {
   public static final int SIZE_DP = 50;
-  private static final int COLOR = Color.YELLOW;
 
   private boolean eaten;
 
@@ -32,14 +30,4 @@ public class Treat extends OverlapableShape {
   public boolean isEaten() {
     return eaten;
   }
-
-//  /**
-//   * Draws the treat. Only draws if not already eaten.
-//   */
-//  @Override
-//  public void draw(Canvas canvas) {
-//    if (!eaten) {
-//      canvas.drawArc(new RectF(geometry), 0, 360, true, paint);
-//    }
-//  }
 }

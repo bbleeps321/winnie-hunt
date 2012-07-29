@@ -4,7 +4,6 @@
 package com.czhang.winniehunt;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Rect;
 
 /**
@@ -14,7 +13,6 @@ import android.graphics.Rect;
  */
 public class Carey extends OverlapableShape {
   public static final int SIZE_DP = 50;
-  private static final int COLOR = Color.RED;
   private static final int MAX_VELOCITY = 5;
   private static final int MIN_VELOCITY = 1;
 
@@ -64,9 +62,4 @@ public class Carey extends OverlapableShape {
     // 50% chance of opposite direction;
     return (Math.random() < 0.5) ? dv : -dv;
   }
-
-//  @Override
-//  public void draw(Canvas canvas) {
-//    canvas.drawRect(geometry, paint);
-//  }
 }

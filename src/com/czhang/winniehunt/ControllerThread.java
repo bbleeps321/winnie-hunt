@@ -14,8 +14,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Rect;
-import android.media.AudioManager;
-import android.media.ToneGenerator;
 import android.os.Vibrator;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -36,8 +34,8 @@ public class ControllerThread extends Thread {
   private static final int BACKGROUND_COLOR = Color.BLACK;
 
   /** Vibration patterns. */
-  private static final long[] EAT_PATTERN = new long[] {0, 20};
-  private static final long[] CAUGHT_PATTERN = new long[] {0, 50, 100, 150, 200, 250};
+  private static final long[] EAT_PATTERN = new long[] {0, 30};
+  private static final long[] CAUGHT_PATTERN = new long[] {0, 100, 200, 300, 400, 500};
 
   /** Safe zone within which no Carey's can be generated. */
   private static final int SAFE_ZONE_RADIUS = 100;
@@ -45,8 +43,8 @@ public class ControllerThread extends Thread {
   /** Random number generator used for picking images. */
   private static final Random RAND = new Random();
 
-  /** Tone generator used for beeps. */
-  private static final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+  /** Maximum delay between taps to count as double tap. */
+  private static final int DOUBLE_TAP_DELAY_MS = 250;
 
   /**
    * Enum for the state of the thread.
@@ -97,8 +95,20 @@ public class ControllerThread extends Thread {
   /** Image bitmaps used for Treats. */
   private final List<Bitmap> treatImages;
 
+  /**
+   * Image index used so Carey images chosen in sequential order.
+   * Between 0 and {@code careyImages.size - 1}.   *
+   */
+  private int careyImageIndex;
+
   /** Vibrator used for certain parts of the game. */
   private final Vibrator vibrator;
+
+  /**
+   * Time of the last tap event or 0 if never set.
+   * Only set when handling motion events in the END {@link State}.
+   */
+  private long lastTapTime;
 
   /**
    * Creates a new instance of the thread. Does not start the game yet.
@@ -127,16 +137,22 @@ public class ControllerThread extends Thread {
     winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie3));
     winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie4));
     winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie5));
+    winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie6));
+    winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie7));
+    winnieImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.winnie8));
     careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey));
     careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey2));
     careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey3));
     careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey4));
     careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey5));
+    careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey6));
+    careyImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.carey7));
     treatImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.treat));
     treatImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.treat2));
     treatImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.treat3));
     treatImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.treat4));
     treatImages.add(BitmapFactory.decodeResource(context.getResources(), R.drawable.treat5));
+    careyImageIndex = RAND.nextInt(careyImages.size());
 
     // Set up vibrator.
     vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
@@ -151,11 +167,24 @@ public class ControllerThread extends Thread {
         case PAUSE:
           return false;
         case READY:
-          state = State.RUNNING;
-          return true;
+          if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            state = State.RUNNING;
+            return true;
+          }
+          return false;
         case RUNNING:
           winnie.moveTo((int) event.getX(), (int) event.getY());
           return true;
+        case END:
+          if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            long time = event.getEventTime();
+            if (time - lastTapTime < DOUBLE_TAP_DELAY_MS) {
+              reset();
+            }
+            lastTapTime = time;
+            return true;
+          }
+          return false;
       }
       return false;
     }
@@ -190,6 +219,28 @@ public class ControllerThread extends Thread {
       // Set up initial states
       state = State.READY;
       careys = Lists.newArrayList();
+    }
+  }
+
+  /**
+   * Resets the game. Winnie in the center, one Carey.
+   */
+  private void reset() {
+    synchronized (surfaceHolder) {
+      // Reset back to one Carey.
+      careys = Lists.newArrayList();
+      addCarey();
+
+      // Move Winnie to center.
+      int x = (canvasWidth - Winnie.SIZE_DP) / 2;
+      int y = (canvasHeight - Winnie.SIZE_DP) / 2;
+      winnie = new Winnie(x, y, winnieImages.get(RAND.nextInt(treatImages.size())));
+
+      // Reset treats.
+      setupTreats();
+
+      // Reset state.
+      state = State.READY;
     }
   }
 
@@ -231,7 +282,6 @@ public class ControllerThread extends Thread {
         treats.remove(i);
         i--;
         vibrator.vibrate(EAT_PATTERN, -1);
-        beep();
       }
     }
   }
@@ -252,12 +302,7 @@ public class ControllerThread extends Thread {
     if (overlaps) {
       state = State.END;
       vibrator.vibrate(CAUGHT_PATTERN, -1);
-      beep();
     }
-  }
-
-  private void beep() {
-    tg.startTone(ToneGenerator.TONE_PROP_BEEP);
   }
 
   /**
@@ -328,12 +373,6 @@ public class ControllerThread extends Thread {
    * Returns the number of treats yet to be eaten.
    */
   private int treatsRemaining() {
-//    int count = 0;
-//    for (Treat treat : treats) {
-//      if (!treat.isEaten()) {
-//        count++;
-//      }
-//    }
     return treats.size();
   }
 
@@ -362,7 +401,16 @@ public class ControllerThread extends Thread {
     }
 
     careys.add(new Carey(x, y, canvasWidth, canvasHeight,
-        careyImages.get(RAND.nextInt(treatImages.size()))));
+        careyImages.get(nextCareyImageIndex())));
+  }
+
+  /**
+   * Returns the next index for Carey picture.
+   */
+  private int nextCareyImageIndex() {
+    careyImageIndex++;
+    careyImageIndex = (careyImageIndex >= careyImages.size()) ? 0 : careyImageIndex;
+    return careyImageIndex;
   }
 
   public void setRunning(boolean running) {
